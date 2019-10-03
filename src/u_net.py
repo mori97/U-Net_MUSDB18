@@ -57,6 +57,16 @@ class UNet(torch.nn.Module):
             32, n_class, kernel_size=5, stride=2, padding=2, output_padding=1)
 
     def forward(self, x):
+        """Compute the separation mask.
+
+        Args:
+            x (torch.Tensor): Shape of (n_batch, n_frequency, n_frame).
+                The number of time frames should be a multiple of 64.
+
+        Returns:
+            torch.Tensor: Shape of (n_batch, n_part, n_frequency, n_frame).
+                Separation mask.
+        """
         # Add channel dimension
         x = x.unsqueeze(1)
 
