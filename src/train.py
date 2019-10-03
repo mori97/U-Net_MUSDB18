@@ -6,6 +6,7 @@ import torch.nn.functional as F
 import torch.utils.data
 from torch.utils.tensorboard import SummaryWriter
 
+from common import zero_padding
 import data
 from u_net import UNet
 
@@ -33,6 +34,29 @@ def train(model, data_loader, optimizer, device, epoch, tb_writer):
     tb_writer.add_scalar('train/loss', total_loss / len(data_loader), epoch)
 
 
+def test(model, test_data, device, epoch, tb_writer):
+    model.eval()
+
+    total_loss = 0
+    with torch.no_grad():
+        window = torch.hann_window(N_FFT, device=device)
+        for sound in test_data:
+            sound = sound.to(device)
+            sound_stft = torch.stft(sound, N_FFT, window=window)
+            sound_spec = sound_stft.pow(2).sum(-1).sqrt()
+            sound_spec[1:].clamp_(torch.mean(sound_spec[1:] * 1e-3))
+            t = sound_spec[1:] / torch.sum(sound_spec[1:], dim=0, keepdim=True)
+
+            x, (left, right) = zero_padding(sound_spec[0])
+            right = x.size(1) - right
+            y = model(x.unsqueeze(0)).squeeze(0)[:, :, left:right]
+            loss = F.l1_loss(y, t, reduction='sum')
+            total_loss += loss.item()
+
+    # TODO: Also evaluate separation performance
+    tb_writer.add_scalar('test/loss', total_loss / len(test_data), epoch)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Train U-Net with MUSDB18 dataset.',
@@ -47,6 +71,9 @@ def main():
     parser.add_argument('--epochs', '-e',
                         help='Number of epochs',
                         type=int, default=500)
+    parser.add_argument('--eval-interval',
+                        help='Evaluate and save model per N epochs',
+                        type=int, metavar='N', default=20)
     parser.add_argument('--gpu', '-g',
                         help='GPU id (Negative number indicates CPU)',
                         type=int, nargs='+', metavar='ID', default=[0])
@@ -59,9 +86,6 @@ def main():
     parser.add_argument('--output',
                         help='Save model to PATH',
                         type=str, metavar='PATH', default='./models')
-    parser.add_argument('--output-interval',
-                        help='Save model per N epochs',
-                        type=int, metavar='N', default=50)
     args = parser.parse_args()
 
     if not os.path.isdir(args.output):
@@ -80,7 +104,8 @@ def main():
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate)
 
     # Dataloader
-    train_data, _ = data.read_data(args.dataset, N_FFT, 512, SAMPLING_RATE)
+    train_data, test_data =\
+        data.read_data(args.dataset, N_FFT, 512, SAMPLING_RATE)
     train_dataset = data.RandomCropDataset(train_data, 256)
     train_loader = torch.utils.data.DataLoader(
         train_dataset, args.batch_size, shuffle=True,
@@ -93,6 +118,7 @@ def main():
         train(model, train_loader, optimizer, device, epoch, tb_writer)
         if epoch % args.output_interval == 0:
             # Save the model
+            test(model, test_data, device, epoch, tb_writer)
             model.cpu()
             if isinstance(model, torch.nn.DataParallel):
                 state_dict = model.module.state_dict()
