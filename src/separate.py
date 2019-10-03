@@ -50,8 +50,8 @@ def main():
         model.to(device)
         model.eval()
 
-        mask = model(sound_spec).squeeze(0)
-        mask = mask[:, :, left:-right]
+        right = sound_spec.size(2) - right
+        mask = model(sound_spec).squeeze(0)[:, :, left:right]
         separated = mask.unsqueeze(3) * sound_stft
         separated = istft(
             separated, N_FFT, window=window, length=sound.size(-1))
