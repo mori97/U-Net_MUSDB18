@@ -40,8 +40,7 @@ def read_data(dataset_dir, n_fft, data_len, sampling_rate):
             sound_spec = torch.stft(sound, n_fft, window=window)
             sound_spec = sound_spec.pow(2).sum(-1).sqrt()
             x = sound_spec[0]
-            sound_spec[1:].clamp_(torch.mean(sound_spec[1:] * 1e-3))
-            t = sound_spec[1:] / torch.sum(sound_spec[1:], dim=0, keepdim=True)
+            t = sound_spec[1:]
 
             hop = data_len // 4
             # Split to fixed length segments
@@ -59,7 +58,8 @@ def read_data(dataset_dir, n_fft, data_len, sampling_rate):
             path = os.path.join(test_dir, wav_file)
             sound, sr = torchaudio.load(path)
             assert sr == sampling_rate
-            test.append(sound)
+            split_sound = torch.split(sound, sound.size(1) // 2, dim=1)
+            test.extend(split_sound)
 
     return train, test
 

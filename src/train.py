@@ -21,7 +21,7 @@ def train(model, data_loader, optimizer, device, epoch, tb_writer):
     for x, t in data_loader:
         batch_size = x.size(0)
         x, t = x.to(device), t.to(device)
-        y = model(x)
+        y = model(x) * x.unsqueeze(1)
 
         loss = F.l1_loss(y, t, reduction='sum') / batch_size
         total_loss += loss.item()
@@ -43,12 +43,12 @@ def test(model, test_data, device, epoch, tb_writer):
             sound = sound.to(device)
             sound_stft = torch.stft(sound, N_FFT, window=window)
             sound_spec = sound_stft.pow(2).sum(-1).sqrt()
-            sound_spec[1:].clamp_(torch.mean(sound_spec[1:] * 1e-3))
-            t = sound_spec[1:] / torch.sum(sound_spec[1:], dim=0, keepdim=True)
+            x, t = sound_spec[0], sound_spec[1:]
 
-            x, (left, right) = zero_padding(sound_spec[0])
-            right = x.size(1) - right
-            y = model(x.unsqueeze(0)).squeeze(0)[:, :, left:right]
+            x_padded, (left, right) = zero_padding(x)
+            right = x_padded.size(1) - right
+            mask = model(x_padded.unsqueeze(0)).squeeze(0)[:, :, left:right]
+            y = mask * x.unsqueeze(0)
             loss = F.l1_loss(y, t, reduction='sum')
             total_loss += loss.item()
 
@@ -72,7 +72,7 @@ def main():
                         type=int, default=500)
     parser.add_argument('--eval-interval',
                         help='Evaluate and save model per N epochs',
-                        type=int, metavar='N', default=20)
+                        type=int, metavar='N', default=25)
     parser.add_argument('--gpu', '-g',
                         help='GPU id (Negative number indicates CPU)',
                         type=int, nargs='+', metavar='ID', default=[0])
