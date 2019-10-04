@@ -6,9 +6,8 @@ import torch.nn.functional as F
 import torch.utils.data
 from torch.utils.tensorboard import SummaryWriter
 
-from common import zero_padding
 import data
-from u_net import UNet
+from u_net import UNet, zero_padding
 
 N_PART = 4
 N_FFT = 2047

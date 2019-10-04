@@ -7,9 +7,8 @@ import torch
 import torchaudio
 from torchaudio.functional import istft
 
-from common import zero_padding
 from train import N_FFT, N_PART, SAMPLING_RATE
-from u_net import UNet
+from u_net import UNet, zero_padding
 
 
 def main():
