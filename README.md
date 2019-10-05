@@ -1,5 +1,10 @@
 # U-Net_MUSDB18
 
+Implementation of U-Net for music separation.
+
+MUSDB18 dataset is used for training and evaluation. 
+You can download it [here](https://zenodo.org/record/1117372/accessrequest) (access request is necessary).
+
 ## Prerequisites
 
 - librosa >= 0.7.0
