@@ -30,11 +30,10 @@ def read_data(dataset_dir, n_fft, data_len, sampling_rate):
     with torch.no_grad():
         # Train data
         train_dir = os.path.join(dataset_dir, 'train')
-        wav_files = [f for f in os.listdir(train_dir)
+        wav_files = [os.path.join(train_dir, f) for f in os.listdir(train_dir)
                      if os.path.splitext(f)[1] == '.wav']
         train = []
-        for wav_file in wav_files:
-            path = os.path.join(train_dir, wav_file)
+        for path in wav_files:
             sound, sr = torchaudio.load(path)
             assert sr == sampling_rate
             sound_spec = torch.stft(sound, n_fft, window=window)
@@ -51,13 +50,13 @@ def read_data(dataset_dir, n_fft, data_len, sampling_rate):
 
         # Test data
         test_dir = os.path.join(dataset_dir, 'test')
-        wav_files = [f for f in os.listdir(test_dir)
+        wav_files = [os.path.join(test_dir, f) for f in os.listdir(test_dir)
                      if os.path.splitext(f)[1] == '.wav']
         test = []
-        for wav_file in wav_files:
-            path = os.path.join(test_dir, wav_file)
+        for path in wav_files:
             sound, sr = torchaudio.load(path)
             assert sr == sampling_rate
+            # Split data into two parts to save memory
             split_sound = torch.split(sound, sound.size(1) // 2, dim=1)
             test.extend(split_sound)
 
