@@ -7,7 +7,7 @@ import torch.utils.data
 from torch.utils.tensorboard import SummaryWriter
 
 import data
-from u_net import UNet, zero_padding
+from u_net import UNet, padding
 
 N_PART = 4
 N_FFT = 2047
@@ -45,7 +45,7 @@ def test(model, test_data, device, epoch, tb_writer):
             sound_spec = sound_stft.pow(2).sum(-1).sqrt()
             x, t = sound_spec[0], sound_spec[1:]
 
-            x_padded, (left, right) = zero_padding(x)
+            x_padded, (left, right) = padding(x)
             right = x_padded.size(1) - right
             mask = model(x_padded.unsqueeze(0)).squeeze(0)[:, :, left:right]
             y = mask * x.unsqueeze(0)

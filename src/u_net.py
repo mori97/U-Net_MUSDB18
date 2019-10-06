@@ -92,15 +92,15 @@ class UNet(torch.nn.Module):
         return h
 
 
-def zero_padding(sound_stft):
-    """Apply zero padding to ensure that number of time frames of `sound`'s
-    STFT representation is multiple of 64.
+def padding(sound_stft):
+    """Apply reflection padding to ensure that number of time frames of
+    `sound`'s STFT representation is multiple of 64.
 
     Args:
         sound_stft (torch.Tensor): Spectrogram to be padded.
 
     Returns:
-        Tuple[torch.Tensor, Tuple[int, int]]: Zero padded spectrogram and
+        Tuple[torch.Tensor, Tuple[int, int]]: Reflection padded spectrogram and
             number of rows padded to left-side and right-side, respectively.
     """
     n_frames = sound_stft.size(-1)
@@ -108,6 +108,6 @@ def zero_padding(sound_stft):
     if n_pad:
         left = n_pad // 2
         right = n_pad - left
-        return F.pad(sound_stft, (left, right)), (left, right)
+        return F.pad(sound_stft, (left, right), mode='reflect'), (left, right)
     else:
         return sound_stft, (0, 0)

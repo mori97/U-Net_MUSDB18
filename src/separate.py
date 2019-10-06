@@ -8,7 +8,7 @@ import torchaudio
 from torchaudio.functional import istft
 
 from train import N_FFT, N_PART, SAMPLING_RATE
-from u_net import UNet, zero_padding
+from u_net import UNet, padding
 
 
 def main():
@@ -41,7 +41,7 @@ def main():
         # time frames to a multiple of 64 to be fed into U-NET
         sound_stft = torch.stft(sound, N_FFT, window=window)
         sound_spec = sound_stft.pow(2).sum(-1).sqrt()
-        sound_spec, (left, right) = zero_padding(sound_spec)
+        sound_spec, (left, right) = padding(sound_spec)
 
         # Load the model
         model = UNet(N_PART)
