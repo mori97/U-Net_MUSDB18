@@ -5,7 +5,6 @@ import argparse
 import soundfile as sf
 import torch
 import torchaudio
-from torchaudio.functional import istft
 
 from train import N_FFT, N_PART, SAMPLING_RATE
 from u_net import UNet, padding
@@ -52,7 +51,7 @@ def main():
         right = sound_spec.size(2) - right
         mask = model(sound_spec).squeeze(0)[:, :, left:right]
         separated = mask.unsqueeze(3) * sound_stft
-        separated = istft(
+        separated = torch.istft(
             separated, N_FFT, window=window, length=sound.size(-1))
         separated = separated.cpu().numpy()
 
